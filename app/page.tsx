@@ -1,113 +1,98 @@
+'use client'
 import Image from "next/image";
-
+import XLSX from 'xlsx';
+const partition: Record<string, number>= {'Charges':2,'P&L':2,'Realised trades':0,'Stock name':10,'Unrealised trades':0,'Disclaimer: ':0}
+const notRequired : Record<string, string>={'':'nr','Realised trades':'nr','Unrealised trades':'nr'}
 export default function Home() {
+  
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);    // Use the library (xlsx or exceljs) to parse the Excel file
+      // Example using xlsx:
+      const d={j:5}
+      //console.log(d.j);
+      d.j+=5
+      //console.log(d.j);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const range = XLSX.utils.decode_range(workbook.Sheets.Sheet1['!ref'] as string)
+      const sheet1 = workbook.Sheets.Sheet1
+     // console.log(range);
+      const r='A10:H24'
+     // console.log(XLSX.utils.decode_range(r as string))
+      const jsonData = [];
+ 
+   
+      
+        const sh = workbook.Sheets.Sheet1;
+        let count=0;
+        let ind =0;
+        let start=0;
+        let prev=''
+        const options:Record<string, any> = {};
+        for(const cell in sh)
+          {  
+               if(cell[0]=='A')
+                {
+                  
+                  if(sh[cell].v in partition)
+                    {
+                         if(!(prev in notRequired))
+                          {
+                              const ce = partition[prev] 
+                              //console.log('ce',ce)
+                              const obj = {s:{r:start-1,c:0},e:{r:start+count-1,c:ce}}
+                              if(options[sh[cell].v]==undefined)
+                                {
+                                  options[sh[cell].v]=[]
+                                }
+                                options[sh[cell].v].push({range:obj,header:start})
+                          
+                            }
+                              count=0;
+                              start=parseInt(cell.substring(1))
+                              prev=sh[cell].v
+                         
+                    }
+                    count++;
+                }                                                                                                         
+              
+          }
+          const Data = []
+          for(const data in options)
+            {
+              //console.log(data)
+                  for(const opt of options[data])
+                    {
+                      const dataObject = XLSX.utils.sheet_to_json(workbook.Sheets.Sheet1, {
+                        range: opt.range,
+                        header: opt.header
+                     
+                    })
+                   // console.log(opt)
+                    //console.log(dataObject)
+                    Data.push(dataObject)
+                    }
+            }
+          console.log(Data);
+    }
+
+     
+      // Now you can work with the workbook object
+      //
+    
+    
+  };
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      
+     
+      <input type="file" accept=".xlsx" onChange={handleFileUpload} />
+    
     </main>
   );
 }
